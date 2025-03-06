@@ -1,0 +1,53 @@
+#!/bin/bash
+set -euo pipefail
+
+read -rp "Enter amount of seconds: " seconds &&
+
+#### Construct the filename ###
+
+# filename
+secrest=0
+minutes=0
+hours=0
+result=""
+
+# Calculate minutes and remaining seconds
+if (( seconds >= 60 )); then
+    minutes=$(( seconds / 60 ))
+    secrest=$(( seconds % 60 ))
+else
+    secrest=$seconds
+fi
+
+# Calculate hours and remaining minutes
+if (( minutes >= 60 )); then
+    hours=$(( minutes / 60 ))
+    minutes=$(( minutes % 60 ))
+fi
+
+# Build the filename
+result=""
+(( hours > 0 )) && result+="${hours}h"
+(( minutes > 0 )) && result+="${minutes}min"
+(( secrest > 0 )) && result+="${secrest}sec"
+
+### Create the file ###
+
+# parameters for AAC:
+# - 4000Hz as samplerate, lowest possible
+# - mono channel, doesnt matter if the audioplayer duplicates this as this is silence
+# - 1kHz bitrate, lowest possible
+
+# AAC
+ffmpeg -f lavfi -i anullsrc=r=2000:cl=mono -t "$seconds" -c:a aac -b:a 1k "$result"-silence.m4a
+
+
+# ALTERNATIVES
+# opus (4x the size)
+# higher minimum bitrate
+# ffmpeg -f lavfi -i anullsrc=r=8000:cl=mono -t $seconds -c:a libopus -application voip "$result"-silence.ogg
+
+# other codecs tested, all bigger:
+# wav
+# mp3
+# raw
